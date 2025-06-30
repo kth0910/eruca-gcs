@@ -14,14 +14,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v3
 
       - name: Setup Ruby
@@ -30,17 +27,26 @@ jobs:
           ruby-version: 3.1
           bundler-cache: true
 
-      - name: Install and build Jekyll site
+      - name: Build site with Jekyll
         run: |
           cd docs
           bundle install
           bundle exec jekyll build -d ../_site
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-artifact@v4
         with:
+          name: github-pages
           path: ./_site
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
