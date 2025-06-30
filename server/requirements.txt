@@ -1,0 +1,5 @@
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart     # 파일 업로드 기능이 있을 경우 필요
+aiofiles             # 정적 파일 제공에 필요 (e.g. index.html)
