@@ -10,13 +10,12 @@ nav_order: 3
 - MPU6050
 - GY6500
 - NEO-6M GPS
-- Serial3에 연결된 XBee 실드
+- Serial에 연결된 XBee 실드
 
 ## Arduino Nano
 - BMP280
 - MPU6050
 - NEO-6M GPS
-- SoftwareSerial 통신 사용
 
 ## Raspberry Pi
 - XBee USB 어댑터로 연결
