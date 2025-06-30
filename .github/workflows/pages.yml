@@ -1,5 +1,4 @@
-# .github/workflows/pages.yml
-name: Build & Deploy Jekyll docs
+name: Docs – build & deploy
 
 on:
   push:
@@ -7,48 +6,41 @@ on:
 
 permissions:
   contents: read
-  pages: write
+  pages: write    # <-- 반드시 있어야 deploy-pages가 권한을 얻음
   id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      name: github-pages            # Pages 기본 환경
+      url:  ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      # 1) 소스 체크아웃
-      - uses: actions/checkout@v3
+    # 1) 소스 체크아웃
+    - uses: actions/checkout@v3
 
-      # 2) Ruby 세팅
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.1'
-          bundler-cache: true
+    # 2) Pages 런타임 초기화  (💡 항상 “가장 먼저”)
+    - uses: actions/configure-pages@v4
 
-      # 3) 사이트 빌드
-      - name: Build Jekyll site
-        run: |
-          cd docs
-          bundle install
-          bundle exec jekyll build -d ../_site
+    # 3) Ruby + 번들 캐시
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 3.1
+        bundler-cache: true        # Gemfile.lock 활용
 
-      # 4) Pages 환경 설정 (build_id 를 만들어 줌)
-      - id: pages          # ★ id 필수!
-        uses: actions/configure-pages@v4
+    # 4) Jekyll 빌드
+    - name: Build Jekyll site
+      run: |
+        cd docs
+        bundle install
+        bundle exec jekyll build -d ../_site   # 결과를 워크스페이스 루트의 _site 로
 
-      # 5) Pages 전용 아티팩트 업로드 (v3 : 내부적으로 v4 artifact 사용)
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./_site
+    # 5) Pages 전용 아티팩트 업로드  (v3 → 내부적으로 upload-artifact@v4 사용)
+    - uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./_site              # ← “./” 포함, 이름은 기본값 github-pages
 
-      # 6) 실제 배포 ― build_id 를 넘겨준다!
-      - id: deploy
-        uses: actions/deploy-pages@v2
-        with:
-          build_id: ${{ steps.pages.outputs.build_id }}
+    # 6) 실제 배포
+    - id: deploy
+      uses: actions/deploy-pages@v2
