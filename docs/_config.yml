@@ -1,0 +1,15 @@
+title: GCS Groundstation Docs
+description: 국민대학교 ERUCA 지상국 관제 시스템 문서
+theme: just-the-docs
+
+# GitHub Pages용 설정
+url: https://kth0910.github.io
+baseurl: /eruca-gcs   # 저장소 이름 (슬래시 꼭 붙이기!)
+
+# 네비게이션 자동 구성 (선택)
+nav_sort: case_insensitive
+
+# 로컬에서 markdownlint 경고 끄기 (선택)
+markdown: kramdown
+kramdown:
+  input: GFM
