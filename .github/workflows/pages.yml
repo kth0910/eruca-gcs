@@ -1,4 +1,4 @@
-name: Build and Deploy Jekyll Docs
+name: Build & Deploy Jekyll docs
 
 on:
   push:
@@ -9,40 +9,42 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v3
+      # 1️⃣ 소스 체크아웃
+      - uses: actions/checkout@v3
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      # 2️⃣ Ruby 세팅
+      - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.1'
-          bundler-cache: true
+          bundler-cache: true     # Gemfile.lock 활용
 
-      - name: Install dependencies & Build site
+      # 3️⃣ Jekyll 빌드
+      - name: Build site
         run: |
           cd docs
           bundle install
           bundle exec jekyll build -d ../_site
 
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-artifact@v4
+      # 4️⃣ GitHub Pages 설정 (필수)
+      - uses: actions/configure-pages@v4   # ← 최신
+
+      # 5️⃣ Pages 전용 아티팩트 업로드 (필수)
+      - uses: actions/upload-pages-artifact@v3   # 내부적으로 upload-artifact @v4 사용
         with:
-          name: github-pages       # 반드시 이 이름!
           path: ./_site
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
+      # 6️⃣ 실제 배포
+      - id: deploy
         uses: actions/deploy-pages@v2
