@@ -1,3 +1,4 @@
+# .github/workflows/pages.yml
 name: Build & Deploy Jekyll docs
 
 on:
@@ -28,23 +29,26 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.1'
-          bundler-cache: true    # Gemfile.lock 활용
+          bundler-cache: true
 
-      # 3) Jekyll 빌드
-      - name: Build site
+      # 3) 사이트 빌드
+      - name: Build Jekyll site
         run: |
           cd docs
           bundle install
           bundle exec jekyll build -d ../_site
 
-      # 4) Pages 환경 설정 (필수)
-      - uses: actions/configure-pages@v4
+      # 4) Pages 환경 설정 (build_id 를 만들어 줌)
+      - id: pages          # ★ id 필수!
+        uses: actions/configure-pages@v4
 
-      # 5) Pages 전용 아티팩트 업로드 (필수, v3!)
+      # 5) Pages 전용 아티팩트 업로드 (v3 : 내부적으로 v4 artifact 사용)
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./_site     # 빌드 결과 폴더
+          path: ./_site
 
-      # 6) 실제 배포
+      # 6) 실제 배포 ― build_id 를 넘겨준다!
       - id: deploy
         uses: actions/deploy-pages@v2
+        with:
+          build_id: ${{ steps.pages.outputs.build_id }}
