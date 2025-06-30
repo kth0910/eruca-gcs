@@ -1,9 +1,8 @@
-# .github/workflows/pages.yml
 name: Build & Deploy Jekyll docs
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -22,31 +21,30 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      # 1) 소스 받기
-      - uses: actions/checkout@v3
+    # 1) 소스 체크아웃
+    - uses: actions/checkout@v3
 
-      # 2) Pages 런타임 초기화
-      - uses: actions/configure-pages@v4
+    # 2) Pages 런타임 초기화 (필수)
+    - uses: actions/configure-pages@v4
 
-      # 3) Ruby & Bundler
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.1
-          bundler-cache: true
+    # 3) Ruby + Bundler 캐시
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.1'
+        bundler-cache: true
 
-      # 4) Jekyll 빌드 (docs → 워크스페이스 루트의 _site)
-      - name: Build Jekyll site
-        run: |
-          bundle install                      # 루트에서 실행
-          bundle exec jekyll build \
-            --source docs \                  # ← 소스는 docs/
-            --destination _site              # ← 결과는 ./_site
+    # 4) docs/ 안에서 의존성 설치 + 빌드 (_site 는 저장소 루트에 생성)
+    - name: Install deps & build site
+      working-directory: docs          # ← 핵심!
+      run: |
+        bundle install
+        bundle exec jekyll build -d ../_site
 
-      # 5) Pages 전용 아티팩트 업로드 (v3 : 내부적으로 upload-artifact@v4 사용)
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site                        # ← 루트 _site 경로 (정확!)
+    # 5) Pages 전용 아티팩트 업로드 (v3 → 내부적으로 upload-artifact@v4)
+    - uses: actions/upload-pages-artifact@v3
+      with:
+        path: _site                    # ← 루트 _site 경로 (정확히 일치)
 
-      # 6) 실제 배포
-      - id: deploy
-        uses: actions/deploy-pages@v2
+    # 6) 실제 배포
+    - id: deploy
+      uses: actions/deploy-pages@v2
