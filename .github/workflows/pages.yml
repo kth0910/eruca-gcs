@@ -1,17 +1,13 @@
-name: Build & Deploy Jekyll docs
+name: Build & Deploy Docs
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 permissions:
   contents: read
   pages: write
   id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -21,30 +17,27 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-    # 1) 소스 체크아웃
     - uses: actions/checkout@v3
 
-    # 2) Pages 런타임 초기화 (필수)
-    - uses: actions/configure-pages@v4
+    - uses: actions/configure-pages@v4        # run-id 등록
 
-    # 3) Ruby + Bundler 캐시
     - uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '3.1'
+        ruby-version: 3.1
         bundler-cache: true
 
-    # 4) docs/ 안에서 의존성 설치 + 빌드 (_site 는 저장소 루트에 생성)
-    - name: Install deps & build site
-      working-directory: docs          # ← 핵심!
+    - name: Build Jekyll site
+      working-directory: docs
       run: |
         bundle install
         bundle exec jekyll build -d ../_site
 
-    # 5) Pages 전용 아티팩트 업로드 (v3 → 내부적으로 upload-artifact@v4)
-    - uses: actions/upload-pages-artifact@v3
+    - uses: actions/upload-pages-artifact@v3  # 이름 github-pages 로 자동
       with:
-        path: _site                    # ← 루트 _site 경로 (정확히 일치)
+        path: _site
 
-    # 6) 실제 배포
     - id: deploy
       uses: actions/deploy-pages@v2
+      with:                                  # ⬅️ 새로 추가
+        artifact_name: github-pages          # ⬅️ ① 반드시 같은 이름
+        timeout: 600                         # ⬅️ ② (선택) 10분 타임아웃
