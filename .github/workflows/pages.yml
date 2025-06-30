@@ -1,4 +1,4 @@
-name: Deploy Jekyll site to GitHub Pages
+name: Build and Deploy Jekyll Docs
 
 on:
   push:
@@ -8,10 +8,6 @@ permissions:
   contents: read
   pages: write
   id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
 
 jobs:
   build:
@@ -24,10 +20,10 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.1
+          ruby-version: '3.1'
           bundler-cache: true
 
-      - name: Build site with Jekyll
+      - name: Install dependencies & Build site
         run: |
           cd docs
           bundle install
@@ -36,7 +32,7 @@ jobs:
       - name: Upload GitHub Pages artifact
         uses: actions/upload-artifact@v4
         with:
-          name: github-pages
+          name: github-pages       # 반드시 이 이름!
           path: ./_site
 
   deploy:
