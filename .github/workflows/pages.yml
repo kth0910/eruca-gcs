@@ -10,7 +10,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
@@ -21,30 +21,30 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      # 1️⃣ 소스 체크아웃
+      # 1) 소스 체크아웃
       - uses: actions/checkout@v3
 
-      # 2️⃣ Ruby 세팅
+      # 2) Ruby 세팅
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.1'
-          bundler-cache: true     # Gemfile.lock 활용
+          bundler-cache: true    # Gemfile.lock 활용
 
-      # 3️⃣ Jekyll 빌드
+      # 3) Jekyll 빌드
       - name: Build site
         run: |
           cd docs
           bundle install
           bundle exec jekyll build -d ../_site
 
-      # 4️⃣ GitHub Pages 설정 (필수)
-      - uses: actions/configure-pages@v4   # ← 최신
+      # 4) Pages 환경 설정 (필수)
+      - uses: actions/configure-pages@v4
 
-      # 5️⃣ Pages 전용 아티팩트 업로드 (필수)
-      - uses: actions/upload-pages-artifact@v3   # 내부적으로 upload-artifact @v4 사용
+      # 5) Pages 전용 아티팩트 업로드 (필수, v3!)
+      - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./_site
+          path: ./_site     # 빌드 결과 폴더
 
-      # 6️⃣ 실제 배포
+      # 6) 실제 배포
       - id: deploy
         uses: actions/deploy-pages@v2
