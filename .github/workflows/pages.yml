@@ -1,5 +1,3 @@
-# .github/workflows/pages.yml
-
 name: Deploy Jekyll site to GitHub Pages
 
 on:
@@ -32,8 +30,8 @@ jobs:
           bundle install
           bundle exec jekyll build -d ../_site
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+      - name: Upload built site artifact
+        uses: actions/upload-pages-artifact@v2
         with:
           path: _site
 
