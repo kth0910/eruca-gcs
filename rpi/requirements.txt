@@ -1,3 +1,4 @@
 pyserial
 requests
 python-dotenv
+paho-mqtt
