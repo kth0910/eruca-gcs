@@ -5,7 +5,7 @@ from typing import List
 import asyncio
 import sqlite3
 from collections import deque
-from .models import Telemetry
+from models import Telemetry
 
 router = APIRouter()
 
