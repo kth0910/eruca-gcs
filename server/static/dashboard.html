@@ -95,34 +95,41 @@
   }
   animate();
 
-  // ======== SSE 연결 및 데이터 처리 ========
-  const source = new EventSource('/stream');
+
+
+// ======== SSE 연결 및 데이터 처리 ========
+let source;
+
+function connectSSE() {
+  source = new EventSource('/stream');
+
   source.onmessage = e => {
-    // e.data 예: "rocket/sensors: ACC:548,44,15140;GYRO:-193,-243,-104"
-    const parts = e.data.split('ACC:');
-    if (parts.length < 2) return;
-    const accGyro = parts[1].split(';GYRO:');
-    const acc = accGyro[0].split(',').map(Number);
-    // ACC array: [ax, ay, az]
-    const [ax, ay, az] = acc;
+    try {
+      const parts = e.data.split('ACC:');
+      if (parts.length < 2) return;
+      const accGyro = parts[1].split(';GYRO:');
+      const acc = accGyro[0].split(',').map(Number);
+      const [ax, ay, az] = acc;
+      pushAccel(ax, ay, az);
 
-    // 1) 차트에 추가
-    pushAccel(ax, ay, az);
-
-    // 2) 자세 계산 (라디안 → 큐브 회전)
-    // 간단히 Roll(X축 회전), Pitch(Y축 회전)
-    const roll  = Math.atan2(ay, az);
-    const pitch = Math.atan2(-ax, Math.sqrt(ay*ay + az*az));
-
-    // Three.js에서 object.rotation.x 는 pitch, .rotation.z 는 roll
-    cube.rotation.x = pitch;
-    cube.rotation.z = roll;
+      const roll  = Math.atan2(ay, az);
+      const pitch = Math.atan2(-ax, Math.sqrt(ay*ay + az*az));
+      cube.rotation.x = pitch;
+      cube.rotation.z = roll;
+    } catch (err) {
+      console.error('Parse error:', err);
+    }
   };
 
   source.onerror = err => {
-    console.error('SSE Error:', err);
+    console.warn('SSE disconnected. Reconnecting in 5s…');
     source.close();
+    setTimeout(connectSSE, 5000);  // 재연결 시도
   };
+}
+
+connectSSE();
+ 
   </script>
 </body>
 </html>
