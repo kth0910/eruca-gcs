@@ -1,68 +1,66 @@
-import sqlite3
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse, StreamingResponse
-from paho.mqtt.client import Client
+# server/main.py
 import threading
-from collections import deque
-import asyncio
+import sqlite3
+from datetime import datetime
+import paho.mqtt.client as mqtt
+import uvicorn
+from fastapi import FastAPI
+import os
+from router import router, sse_queue
 
 app = FastAPI()
+app.include_router(router)
 
-# SQLite 초기화
-conn = sqlite3.connect("telemetry.db", check_same_thread=False)
-cursor = conn.cursor()
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS telemetry (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    topic TEXT,
-    message TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-)
-''')
-conn.commit()
+# 1) 초기 DB 테이블 생성
+def init_db():
+    # DB 파일이 없으면 생성
+    if not os.path.exists("telemetry.db"):
+        open("telemetry.db", "a").close()
+        
+    conn = sqlite3.connect("telemetry.db", check_same_thread=False)
+    cur = conn.cursor()
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS telemetry (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            topic TEXT,
+            message TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
 
-# MQTT 콜백 함수
+# 2) MQTT 콜백 정의
 def on_connect(client, userdata, flags, rc):
-    print("Connected with result code " + str(rc))
+    print("MQTT connected with code", rc)
     client.subscribe("rocket/sensors/#")
 
-# 최신 메시지를 저장하는 큐 (길이 제한 있음)
-message_queue = deque(maxlen=100)
 
-# 기존 MQTT on_message에 메시지 큐 추가
 def on_message(client, userdata, msg):
-    message = msg.payload.decode()
-    print(f"Received from {msg.topic}: {message}")
-    cursor.execute("INSERT INTO telemetry (topic, message) VALUES (?, ?)", (msg.topic, message))
+    payload = msg.payload.decode(errors="ignore")
+    # DB 저장
+    conn = sqlite3.connect("telemetry.db", check_same_thread=False)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO telemetry (topic, message, timestamp) VALUES (?, ?, ?)" ,
+        (msg.topic, payload, datetime.now())
+    )
     conn.commit()
-    message_queue.append(f"data: {msg.topic} - {message}\n\n")
+    conn.close()
+    # SSE 큐에 포맷 맞춰 추가
+    sse_queue.append(f"data: {msg.topic}:{payload}\n\n")
 
-# MQTT 스레드 실행
-def mqtt_thread():
-    client = Client()
+# 3) 백그라운드에서 MQTT 구독 시작
+def start_mqtt_client():
+    client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
-    client.connect("localhost", 1883)
+    client.connect("localhost", 1883, keepalive=60)
     client.loop_forever()
 
-threading.Thread(target=mqtt_thread, daemon=True).start()
-
-# FastAPI 엔드포인트
-@app.get("/data")
-def get_data(limit: int = 50):
-    cursor.execute("SELECT topic, message, timestamp FROM telemetry ORDER BY timestamp DESC LIMIT ?", (limit,))
-    rows = cursor.fetchall()
-    return JSONResponse(content={"data": rows})
-
-# SSE 엔드포인트
-@app.get("/stream")
-async def stream():
-    async def event_generator():
-        last_index = 0
-        while True:
-            await asyncio.sleep(0.5)
-            if len(message_queue) > last_index:
-                while last_index < len(message_queue):
-                    yield message_queue[last_index]
-                    last_index += 1
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+if __name__ == "__main__":
+    init_db()
+    threading.Thread(target=start_mqtt_client, daemon=True).start()
+    uvicorn.run(app, host="0.0.0.0", port=8000)
