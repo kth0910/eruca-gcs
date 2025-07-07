@@ -37,9 +37,13 @@ async def event_generator():
     last_index = 0
     while True:
         await asyncio.sleep(0.1)
-        while last_index < len(sse_queue):
-            yield sse_queue[last_index]
-            last_index += 1
+        if last_index < len(sse_queue):
+            while last_index < len(sse_queue):
+                yield sse_queue[last_index]
+                last_index += 1
+        else:
+            # 메시지가 없어도 noop ping
+            yield ":\n\n"
 
 @router.get("/stream")
 async def stream():
