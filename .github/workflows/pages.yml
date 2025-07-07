@@ -1,0 +1,43 @@
+name: Build & Deploy Docs
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/configure-pages@v4        # run-id 등록
+
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 3.1
+        bundler-cache: true
+
+    - name: Build Jekyll site
+      working-directory: docs
+      run: |
+        bundle install
+        bundle exec jekyll build -d ../_site
+
+    - uses: actions/upload-pages-artifact@v3  # 이름 github-pages 로 자동
+      with:
+        path: _site
+
+    - id: deploy
+      uses: actions/deploy-pages@v2
+      with:                                  # ⬅️ 새로 추가
+        artifact_name: github-pages          # ⬅️ ① 반드시 같은 이름
+        timeout: 600                         # ⬅️ ② (선택) 10분 타임아웃
