@@ -81,14 +81,14 @@
   rocket.add(coneMesh);
 
   // 지느러미 4개
-  const finGeom=new THREE.BoxGeometry(0.1,0.6,1);
-  for(let i=0;i<4;i++){
-    const fin=new THREE.Mesh(finGeom,bodyMat);
-    fin.position.y=-1.8;
-    fin.position.z=0.5;
-    fin.rotation.y=i*Math.PI/2;
-    rocket.add(fin);
-  }
+//   const finGeom=new THREE.BoxGeometry(0.1,0.6,1);
+//   for(let i=0;i<4;i++){
+//     const fin=new THREE.Mesh(finGeom,bodyMat);
+//     fin.position.y=-1.8;
+//     fin.position.z=0.5;
+//     fin.rotation.y=i*Math.PI/2;
+//     rocket.add(fin);
+//   }
 
   scene.add(rocket);
   scene.add(new THREE.AxesHelper(5));
