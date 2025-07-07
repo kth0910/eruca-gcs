@@ -40,6 +40,7 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
     payload = msg.payload.decode(errors="ignore")
+    print(f"[MQTT] {msg.topic}: {payload}")
     # DB 저장
     conn = sqlite3.connect("telemetry.db", check_same_thread=False)
     cur = conn.cursor()
