@@ -1,11 +1,12 @@
 # server/router.py
 from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 from typing import List
 import asyncio
 import sqlite3
 from collections import deque
 from models import Telemetry
+import os
 
 router = APIRouter()
 
@@ -46,3 +47,11 @@ async def stream():
     Server-Sent Events 엔드포인트
     """
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+BASE_DIR = os.path.dirname(__file__)
+
+@router.get("/dashboard", response_class=HTMLResponse)
+def dashboard():
+    path = os.path.join(BASE_DIR, "static", "dashboard.html")
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()

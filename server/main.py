@@ -7,9 +7,13 @@ import uvicorn
 from fastapi import FastAPI
 import os
 from router import router, sse_queue
+from fastapi.staticfiles import StaticFiles
+
 
 app = FastAPI()
 app.include_router(router)
+
+
 
 # 1) 초기 DB 테이블 생성
 def init_db():
@@ -31,6 +35,15 @@ def init_db():
     )
     conn.commit()
     conn.close()
+
+# ─── Static Files 설정 ───────────────────────────────────────
+BASE_DIR = os.path.dirname(__file__)
+app.mount(
+    "/static",
+    StaticFiles(directory=os.path.join(BASE_DIR, "static")),
+    name="static"
+)
+
 
 # 2) MQTT 콜백 정의
 def on_connect(client, userdata, flags, rc):

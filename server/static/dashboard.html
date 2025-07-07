@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rocket Dashboard with Chart.js & Three.js</title>
+  <style>
+    body { margin: 0; display: flex; height: 100vh; }
+    #chartContainer { width: 50%; padding: 1rem; box-sizing: border-box; background: #1e1e1e; }
+    #chart { width: 100%; height: 100%; }
+    #threeContainer { width: 50%; }
+    canvas { display: block; }
+    h2 { color: #00e1ff; font-family: sans-serif; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div id="chartContainer">
+    <h2>실시간 ACC 값</h2>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <div id="threeContainer"></div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+
+  <script>
+  // ======== Chart.js 초기화 ========
+  const ctx = document.getElementById('chart').getContext('2d');
+  const maxPoints = 50;
+  const data = {
+    labels: Array(maxPoints).fill(''),
+    datasets: [
+      { label: 'ACC X', data: Array(maxPoints).fill(null), borderColor: 'red',    tension: 0.3 },
+      { label: 'ACC Y', data: Array(maxPoints).fill(null), borderColor: 'green',  tension: 0.3 },
+      { label: 'ACC Z', data: Array(maxPoints).fill(null), borderColor: 'blue',   tension: 0.3 },
+    ]
+  };
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data,
+    options: {
+      animation: false,
+      responsive: true,
+      scales: {
+        x: { display: false },
+        y: { min: -20000, max: 20000 }
+      }
+    }
+  });
+
+  function pushAccel(x,y,z) {
+    data.datasets[0].data.push(x);
+    data.datasets[1].data.push(y);
+    data.datasets[2].data.push(z);
+    data.labels.push('');
+    if (data.datasets[0].data.length > maxPoints) {
+      data.datasets.forEach(ds => ds.data.shift());
+      data.labels.shift();
+    }
+    chart.update('none');
+  }
+
+  // ======== Three.js 초기화 ========
+  const threeContainer = document.getElementById('threeContainer');
+  const scene    = new THREE.Scene();
+  const camera   = new THREE.PerspectiveCamera( 45, threeContainer.clientWidth/threeContainer.clientHeight, 0.1, 1000 );
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize( threeContainer.clientWidth, threeContainer.clientHeight );
+  threeContainer.appendChild( renderer.domElement );
+
+  // 큐브 + 축 Helper
+  const geometry = new THREE.BoxGeometry( 2, 0.2, 1 );
+  const material = new THREE.MeshNormalMaterial();
+  const cube     = new THREE.Mesh( geometry, material );
+  scene.add( cube );
+  const axes = new THREE.AxesHelper( 5 );
+  scene.add( axes );
+
+  camera.position.set(5,5,5);
+  camera.lookAt(0,0,0);
+
+  // 윈도우 리사이즈 대응
+  window.addEventListener('resize', ()=>{
+    renderer.setSize(threeContainer.clientWidth, threeContainer.clientHeight);
+    camera.aspect = threeContainer.clientWidth/threeContainer.clientHeight;
+    camera.updateProjectionMatrix();
+  });
+
+  function animate() {
+    requestAnimationFrame( animate );
+    renderer.render( scene, camera );
+  }
+  animate();
+
+  // ======== SSE 연결 및 데이터 처리 ========
+  const source = new EventSource('/stream');
+  source.onmessage = e => {
+    // e.data 예: "rocket/sensors: ACC:548,44,15140;GYRO:-193,-243,-104"
+    const parts = e.data.split('ACC:');
+    if (parts.length < 2) return;
+    const accGyro = parts[1].split(';GYRO:');
+    const acc = accGyro[0].split(',').map(Number);
+    // ACC array: [ax, ay, az]
+    const [ax, ay, az] = acc;
+
+    // 1) 차트에 추가
+    pushAccel(ax, ay, az);
+
+    // 2) 자세 계산 (라디안 → 큐브 회전)
+    // 간단히 Roll(X축 회전), Pitch(Y축 회전)
+    const roll  = Math.atan2(ay, az);
+    const pitch = Math.atan2(-ax, Math.sqrt(ay*ay + az*az));
+
+    // Three.js에서 object.rotation.x 는 pitch, .rotation.z 는 roll
+    cube.rotation.x = pitch;
+    cube.rotation.z = roll;
+  };
+
+  source.onerror = err => {
+    console.error('SSE Error:', err);
+    source.close();
+  };
+  </script>
+</body>
+</html>
