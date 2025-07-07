@@ -1,11 +1,19 @@
 # rpi/ec2_sender.py
 
-import requests
-from config import EC2_ENDPOINT
+import paho.mqtt.client as mqtt
+from config import EC2_IP, EC2_PORT, MQTT_TOPIC
 
-def send_to_server(data):
-    try:
-        res = requests.post(EC2_ENDPOINT, json=data)
-        print(f"[EC2] Sent: {res.status_code}")
-    except Exception as e:
-        print("[EC2] Error:", e)
+def init_mqtt():
+    """
+    MQTT 클라이언트를 생성·연결하고 loop를 백그라운드로 돌립니다.
+    """
+    client = mqtt.Client()
+    client.connect(EC2_IP, EC2_PORT, keepalive=60)
+    client.loop_start()
+    return client
+
+def send_message(client, message: str):
+    """
+    주어진 메시지를 미리 지정된 토픽으로 발행합니다.
+    """
+    client.publish(MQTT_TOPIC, message)
