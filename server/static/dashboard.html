@@ -2,14 +2,14 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>Rocket Dashboard with Chart.js & Three.js</title>
+  <title>MPU6050 Rocket Dashboard</title>
   <style>
-    body { margin: 0; display: flex; height: 100vh; }
-    #chartContainer { width: 50%; padding: 1rem; box-sizing: border-box; background: #1e1e1e; }
-    #chart { width: 100%; height: 100%; }
-    #threeContainer { width: 50%; }
-    canvas { display: block; }
-    h2 { color: #00e1ff; font-family: sans-serif; text-align: center; }
+    body{margin:0;display:flex;height:100vh}
+    #chartContainer{width:50%;padding:1rem;box-sizing:border-box;background:#1e1e1e}
+    #chart{width:100%;height:100%}
+    #threeContainer{width:50%}
+    canvas{display:block}
+    h2{color:#00e1ff;font-family:sans-serif;text-align:center}
   </style>
 </head>
 <body>
@@ -18,118 +18,111 @@
     <h2>실시간 ACC 값</h2>
     <canvas id="chart"></canvas>
   </div>
-
   <div id="threeContainer"></div>
 
-  <!-- Chart.js -->
+  <!-- Chart.js & Three.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Three.js -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 
   <script>
-  // ======== Chart.js 초기화 ========
+  /* ---------- Chart.js ---------- */
   const ctx = document.getElementById('chart').getContext('2d');
   const maxPoints = 50;
   const data = {
     labels: Array(maxPoints).fill(''),
     datasets: [
-      { label: 'ACC X', data: Array(maxPoints).fill(null), borderColor: 'red',    tension: 0.3 },
-      { label: 'ACC Y', data: Array(maxPoints).fill(null), borderColor: 'green',  tension: 0.3 },
-      { label: 'ACC Z', data: Array(maxPoints).fill(null), borderColor: 'blue',   tension: 0.3 },
+      { label:'ACC X', data:Array(maxPoints).fill(null), borderColor:'red',   tension:.3 },
+      { label:'ACC Y', data:Array(maxPoints).fill(null), borderColor:'green', tension:.3 },
+      { label:'ACC Z', data:Array(maxPoints).fill(null), borderColor:'blue',  tension:.3 },
     ]
   };
-  const chart = new Chart(ctx, {
-    type: 'line',
-    data,
-    options: {
-      animation: false,
-      responsive: true,
-      scales: {
-        x: { display: false },
-        y: { min: -20000, max: 20000 }
-      }
-    }
-  });
-
-  function pushAccel(x,y,z) {
+  const chart = new Chart(ctx,{type:'line',data,
+    options:{animation:false,responsive:true,
+      scales:{x:{display:false},y:{min:-20000,max:20000}}}});
+  function pushAccel(x,y,z){
     data.datasets[0].data.push(x);
     data.datasets[1].data.push(y);
     data.datasets[2].data.push(z);
     data.labels.push('');
-    if (data.datasets[0].data.length > maxPoints) {
-      data.datasets.forEach(ds => ds.data.shift());
-      data.labels.shift();
+    if(data.datasets[0].data.length>maxPoints){
+      data.datasets.forEach(ds=>ds.data.shift()); data.labels.shift();
     }
     chart.update('none');
   }
 
-  // ======== Three.js 초기화 ========
-  const threeContainer = document.getElementById('threeContainer');
-  const scene    = new THREE.Scene();
-  const camera   = new THREE.PerspectiveCamera( 45, threeContainer.clientWidth/threeContainer.clientHeight, 0.1, 1000 );
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize( threeContainer.clientWidth, threeContainer.clientHeight );
-  threeContainer.appendChild( renderer.domElement );
-
-  // 큐브 + 축 Helper
-  const geometry = new THREE.BoxGeometry( 2, 0.2, 1 );
-  const material = new THREE.MeshNormalMaterial();
-  const cube     = new THREE.Mesh( geometry, material );
-  scene.add( cube );
-  const axes = new THREE.AxesHelper( 5 );
-  scene.add( axes );
-
-  camera.position.set(5,5,5);
-  camera.lookAt(0,0,0);
-
-  // 윈도우 리사이즈 대응
-  window.addEventListener('resize', ()=>{
-    renderer.setSize(threeContainer.clientWidth, threeContainer.clientHeight);
-    camera.aspect = threeContainer.clientWidth/threeContainer.clientHeight;
+  /* ---------- Three.js ---------- */
+  const threeContainer=document.getElementById('threeContainer');
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(45,
+        threeContainer.clientWidth/threeContainer.clientHeight,0.1,1000);
+  const renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(threeContainer.clientWidth,threeContainer.clientHeight);
+  threeContainer.appendChild(renderer.domElement);
+  camera.position.set(6,6,6); camera.lookAt(0,0,0);
+  window.addEventListener('resize',()=>{
+    renderer.setSize(threeContainer.clientWidth,threeContainer.clientHeight);
+    camera.aspect=threeContainer.clientWidth/threeContainer.clientHeight;
     camera.updateProjectionMatrix();
   });
 
-  function animate() {
-    requestAnimationFrame( animate );
-    renderer.render( scene, camera );
+  /* ── Rocket Model ── */
+  const rocket=new THREE.Group();
+
+  // 본체(실린더)
+  const bodyGeom=new THREE.CylinderGeometry(0.5,0.5,4,32);
+  const bodyMat =new THREE.MeshNormalMaterial();
+  const bodyMesh=new THREE.Mesh(bodyGeom,bodyMat);
+  rocket.add(bodyMesh);
+
+  // 노즈콘(원뿔)
+  const coneGeom=new THREE.ConeGeometry(0.5,1,32);
+  const coneMesh=new THREE.Mesh(coneGeom,bodyMat);
+  coneMesh.position.y=2.5;   // 본체 위
+  rocket.add(coneMesh);
+
+  // 지느러미 4개
+  const finGeom=new THREE.BoxGeometry(0.1,0.6,1);
+  for(let i=0;i<4;i++){
+    const fin=new THREE.Mesh(finGeom,bodyMat);
+    fin.position.y=-1.8;
+    fin.position.z=0.5;
+    fin.rotation.y=i*Math.PI/2;
+    rocket.add(fin);
   }
+
+  scene.add(rocket);
+  scene.add(new THREE.AxesHelper(5));
+
+  function animate(){ requestAnimationFrame(animate); renderer.render(scene,camera);}
   animate();
 
+  /* ---------- SSE 연결 ---------- */
+  let source;
+  function connectSSE(){
+    source=new EventSource('/stream');
+    source.onmessage=e=>{
+      try{
+        const parts=e.data.split('ACC:'); if(parts.length<2)return;
+        const accGyro=parts[1].split(';GYRO:');
+        const acc=accGyro[0].split(',').map(Number);
+        const [ax,ay,az]=acc;
+        pushAccel(ax,ay,az);
 
+        // Roll, Pitch 계산
+        const roll =Math.atan2(ay,az);
+        const pitch=Math.atan2(-ax,Math.sqrt(ay*ay+az*az));
 
-// ======== SSE 연결 및 데이터 처리 ========
-let source;
-
-function connectSSE() {
-  source = new EventSource('/stream');
-
-  source.onmessage = e => {
-    try {
-      const parts = e.data.split('ACC:');
-      if (parts.length < 2) return;
-      const accGyro = parts[1].split(';GYRO:');
-      const acc = accGyro[0].split(',').map(Number);
-      const [ax, ay, az] = acc;
-      pushAccel(ax, ay, az);
-
-      const roll  = Math.atan2(ay, az);
-      const pitch = Math.atan2(-ax, Math.sqrt(ay*ay + az*az));
-      cube.rotation.x = pitch;
-      cube.rotation.z = roll;
-    } catch (err) {
-      console.error('Parse error:', err);
-    }
-  };
-
-  source.onerror = err => {
-    console.warn('SSE disconnected. Reconnecting in 5s…');
-    source.close();
-    setTimeout(connectSSE, 5000);  // 재연결 시도
-  };
-}
-
-connectSSE();
- 
+        // Rocket 회전 (Pitch=X, Roll=Z)
+        rocket.rotation.x=pitch;
+        rocket.rotation.z=roll;
+      }catch(err){console.error('Parse error',err);}
+    };
+    source.onerror=()=>{
+      console.warn('SSE disconnected. Reconnecting in 5s…');
+      source.close(); setTimeout(connectSSE,5000);
+    };
+  }
+  connectSSE();
   </script>
 </body>
 </html>
