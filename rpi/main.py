@@ -12,19 +12,22 @@ def debug_print(data: str):
 
 def main():
     ser         = init_serial()
+    if ser:
+        print("시리얼 포트 연결 성공:", ser.name)
     mqtt_client = init_mqtt()
 
     try:
         while True:
-            raw = read_line(ser)
-            if not raw:
-                continue
+            if ser.in_waiting > 0:
+                raw = read_line(ser)
+                if not raw:
+                    continue
 
-            # 1) 디버그 출력
-            debug_print(raw)
+                # 1) 디버그 출력
+                debug_print(raw)
 
-            # 2) EC2로 발행
-            send_message(mqtt_client, raw)
+                # 2) EC2로 발행
+                send_message(mqtt_client, raw)
 
             # 너무 빡빡한 루프 방지
             time.sleep(0.01)
