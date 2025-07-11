@@ -16,7 +16,7 @@ def read_line(ser):
     문제가 생기면 None 리턴.
     """
     try:
-        raw = ser.readline().decode("utf-8", errors="ignore").strip()
+        raw = ser.readline().decode("utf-8", errors="replace").strip()
         return raw or None
     except Exception:
         return None
