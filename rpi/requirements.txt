@@ -2,3 +2,4 @@ pyserial
 requests
 python-dotenv
 paho-mqtt
+python3-gpiozero
