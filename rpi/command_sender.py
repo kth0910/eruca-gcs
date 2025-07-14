@@ -8,5 +8,5 @@ def send_command(ser: serial.Serial, cmd: str):
         "type": "command",
         "cmd": cmd
     }
-    ser.write("EJECT" + "\n").encode('utf-8'))
+    ser.write("EJECT" + "\n").encode('utf-8')
     print("[CMD] Sent:", cmd)
