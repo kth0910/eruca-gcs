@@ -42,9 +42,6 @@ def main():
     except KeyboardInterrupt:
         print("종료 중...")
     finally:
-        import RPi.GPIO as GPIO
-        GPIO.cleanup()
-        print("GPIO cleaned up, exiting.")
         mqtt_client.loop_stop()
         print("mqtt loop stopped.")
         ser.close()
