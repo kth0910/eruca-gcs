@@ -3,6 +3,7 @@
 import time
 from serial_reader import init_serial, read_line
 from ec2_sender   import init_mqtt, send_message
+from manual_eject import init_manual, serial_lock, cleanup
 
 def debug_print(data: str):
     """
@@ -14,7 +15,6 @@ def main():
     ser         = init_serial()
     
     # ─────────── 수동 사출 로직 초기화 ───────────
-    from manual_eject import init_manual, serial_lock
     start_manual = init_manual()
     start_manual(ser)   # Worker 스레드 기동
     # ────────────────────────────────────────────
@@ -26,7 +26,8 @@ def main():
     try:
         while True:
             if ser.in_waiting > 0:
-                raw = read_line(ser)
+                with serial_lock:
+                    raw = read_line(ser)
                 if not raw:
                     continue
 
@@ -42,6 +43,8 @@ def main():
     except KeyboardInterrupt:
         print("종료 중...")
     finally:
+        cleanup()
+        print("[main] GPIO Cleanup completed.")
         mqtt_client.loop_stop()
         print("mqtt loop stopped.")
         ser.close()

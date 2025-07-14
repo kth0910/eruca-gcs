@@ -8,10 +8,12 @@ from config import BUTTON_PIN
 
 serial_lock = threading.Lock()
 _cmd_queue = Queue()
+_devices = {}
 
 def init_manual():
     button = Button(BUTTON_PIN)
-
+    _devices["button"] = button
+    
     def _on_press():
         print("[MANUAL] Button pressed, queuing EJECT")
         _cmd_queue.put("EJECT")
@@ -39,3 +41,8 @@ def init_manual():
         print("[MANUAL] Worker thread started")
 
     return start_worker
+
+
+def cleanup():
+    for dev in _devices.values():
+        dev.close()
