@@ -12,6 +12,13 @@ def debug_print(data: str):
 
 def main():
     ser         = init_serial()
+    
+    # ─────────── 수동 사출 로직 초기화 ───────────
+    from manual_eject import init_manual, serial_lock
+    start_manual = init_manual()
+    start_manual(ser)   # Worker 스레드 기동
+    # ────────────────────────────────────────────
+
     if ser:
         print("시리얼 포트 연결 성공:", ser.name)
     mqtt_client = init_mqtt()
@@ -35,8 +42,13 @@ def main():
     except KeyboardInterrupt:
         print("종료 중...")
     finally:
+        import RPi.GPIO as GPIO
+        GPIO.cleanup()
+        print("GPIO cleaned up, exiting.")
         mqtt_client.loop_stop()
+        print("mqtt loop stopped.")
         ser.close()
+        print("Serial connection closed.")
 
 if __name__ == "__main__":
     main()

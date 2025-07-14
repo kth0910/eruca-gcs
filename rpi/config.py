@@ -10,3 +10,5 @@ EC2_PORT    = int(os.getenv("EC2_PORT", 1883))
 MQTT_TOPIC  = os.getenv("MQTT_TOPIC", "rpi")
 SERIAL_PORT = os.getenv("SERIAL_PORT", "/dev/ttyUSB0")
 BAUD_RATE   = int(os.getenv("BAUD_RATE", "115200"))
+BUTTON_PIN = 17    # 물리 11
+#LED_PIN    = 27    # 물리 13
