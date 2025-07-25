@@ -3,7 +3,9 @@
 import time
 from serial_reader import init_serial, read_line
 from ec2_sender   import init_mqtt, send_message
-from manual_eject import init_manual, serial_lock, cleanup
+#from manual_eject_rpi import init_manual, serial_lock, cleanup
+from manual_eject_pc import init_manual, serial_lock
+
 
 def debug_print(data: str):
     """
@@ -43,8 +45,8 @@ def main():
     except KeyboardInterrupt:
         print("종료 중...")
     finally:
-        cleanup()
-        print("[main] GPIO Cleanup completed.")
+        #cleanup()
+        #print("[main] GPIO Cleanup completed.")
         mqtt_client.loop_stop()
         print("mqtt loop stopped.")
         ser.close()
